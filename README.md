@@ -392,62 +392,37 @@ python -m adp_py.cli.cli generate-docs --format markdown --output docs/adp-metad
 
 ```bash
 # Basic scanning
-python -m adp_py.cli.cli scan ./src
-
-# Scan with specific file extensions
-python -m adp_py.cli.cli scan ./src --extensions py,ts,js
-
-# Exclude directories
-python -m adp_py.cli.cli scan ./src --exclude node_modules,__pycache__
+adp scan adp_py/examples/web_service
 
 # Output to JSON file
-python -m adp_py.cli.cli scan ./src --output metadata-inventory.json
+adp scan adp_py/examples/web_service --output metadata-inventory.json
 ```
 
 #### Validate Metadata
 
 ```bash
 # Validate all metadata in a directory
-python -m adp_py.cli.cli validate ./src
+adp validate adp_py/examples/web_service
 
 # Validate with custom schema
-python -m adp_py.cli.cli validate ./src --schema ./schemas/custom-schema.json
-
-# Strict validation (fail on warnings)
-python -m adp_py.cli.cli validate ./src --strict
-
-# Generate validation report
-python -m adp_py.cli.cli validate ./src --report validation-report.json
-```
+adp validate adp_py/examples/web_service --schema ./schemas/custom-schema.json
 
 #### Generate Visualizations
 
 ```bash
 # Basic knowledge graph
-python -m adp_py.cli.cli visualize ./src --output knowledge-graph.png
+adp visualize adp_py/examples/web_service --output knowledge-graph.png
 
-# Focus on specific domain
-python -m adp_py.cli.cli visualize ./src --domain payment-processing --output payment-domain.png
+# Focus on specific domain (yet to be implemented)
+adp visualize adp_py/examples/web_service --domain payment-processing --output payment-domain.png
 
-# Change layout algorithm
-python -m adp_py.cli.cli visualize ./src --layout fdp --output graph-fdp.png
+# Change layout algorithm (yet to be implemented)
+adp visualize adp_py/examples/web_service --layout fdp --output graph-fdp.png
 
-# Export to different formats
-python -m adp_py.cli.cli visualize ./src --format svg --output knowledge-graph.svg
+# Export to different formats (yet to be implemented)
+adp visualize adp_py/examples/web_service --format svg --output knowledge-graph.svg
 ```
 
-#### Export Metadata
-
-```bash
-# Export to JSON
-python -m adp_py.cli.cli export ./src --format json --output metadata.json
-
-# Export to CSV (for spreadsheet analysis)
-python -m adp_py.cli.cli export ./src --format csv --output metadata.csv
-
-# Export specific domains
-python -m adp_py.cli.cli export ./src --domains auth,payment --format json --output selected-domains.json
-```
 
 ## Knowledge Graph Usage
 
@@ -457,16 +432,17 @@ To analyze dependencies between components:
 
 ```bash
 # Generate dependency graph
-python -m adp_py.cli.cli visualize ./src --relationship-types dependency --output dependencies.png
+adp visualize adp_py/examples/web_service --relationship-types dependency --output dependencies.png
 
-# Find circular dependencies
+# Create a Interactive Graph in Html
+adp interactive . --title "Project Knowledge Graph"
+
+# Find circular dependencies (Yet to be implemented)
 python -m adp_py.cli.cli analyze-dependencies ./src --find-circular
 
-# List all dependencies for a specific file
-python -m adp_py.cli.cli analyze-dependencies ./src/auth_service.py --depth 2
 ```
 
-### Domain Analysis
+### Domain Analysis (Yet to be implemented)
 
 To analyze and visualize domain boundaries:
 

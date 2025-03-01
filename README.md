@@ -406,6 +406,9 @@ adp validate adp_py/examples/web_service
 
 # Validate with custom schema
 adp validate adp_py/examples/web_service --schema ./schemas/custom-schema.json
+```
+
+## Knowledge Graph Usage
 
 #### Generate Visualizations
 
@@ -423,16 +426,11 @@ adp visualize adp_py/examples/web_service --layout fdp --output graph-fdp.png
 adp visualize adp_py/examples/web_service --format svg --output knowledge-graph.svg
 ```
 
-
-## Knowledge Graph Usage
-
 ### Analyzing Dependencies
 
 To analyze dependencies between components:
 
 ```bash
-# Generate dependency graph
-adp visualize adp_py/examples/web_service --relationship-types dependency --output dependencies.png
 
 # Create a Interactive Graph in Html
 adp interactive . --title "Project Knowledge Graph"

@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Project Knowledge Graph</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        #cy {
+            width: 100%;
+            height: 85vh;
+            display: block;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            padding: 15px 20px;
+            background-color: #34495e;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2c3e50;
+        }
+        .controls {
+            padding: 10px 20px;
+            background-color: #ecf0f1;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        button, select {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+        }
+        #search {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 5px;
+            width: 200px;
+        }
+        .legend {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 80vh;
+            overflow-y: auto;
+            font-size: 12px;
+            width: 200px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+            max-width: 400px;
+            z-index: 1001;
+            font-size: 13px;
+            display: none;
+            pointer-events: none;
+            overflow-y: auto;
+            max-height: 60vh;
+            transition: opacity 0.2s;
+        }
+        .tooltip h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            color: #2c3e50;
+        }
+        .tooltip h4 {
+            margin: 12px 0 6px 0;
+            font-size: 14px;
+            color: #2980b9;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 4px;
+        }
+        .tooltip p {
+            margin: 4px 0;
+            display: flex;
+            align-items: baseline;
+        }
+        .tooltip-label {
+            font-weight: 600;
+            display: inline-block;
+            min-width: 100px;
+            color: #555;
+            flex-shrink: 0;
+        }
+        .tooltip-value {
+            word-break: break-word;
+            flex-grow: 1;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 5px;
+            font-weight: normal;
+        }
+        .section-title {
+            font-weight: 600;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .metadata-section {
+            margin-left: 10px;
+            padding-left: 10px;
+            border-left: 3px solid #f0f0f0;
+        }
+        .edge-tooltip {
+            background-color: #f8f8f8;
+            border-left: 4px solid #3498db;
+        }
+        #snapshot {
+            margin-left: 10px;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.25.0/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@2.0.0/cytoscape-popper.min.js"></script>
+    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h2>Project Knowledge Graph</h2>
+        <div class="search-container">
+            <input type="text" id="search" placeholder="Search nodes...">
+            <button id="searchBtn">Search</button>
+        </div>
+    </div>
+    <div class="controls">
+        <button id="fit">Fit View</button>
+        <button id="hierarchical">Hierarchical Layout</button>
+        <button id="concentric">Concentric Layout</button>
+        <button id="force">Force-Directed Layout</button>
+        <select id="filterByType">
+            <option value="all">All Node Types</option>
+        </select>
+        <button id="resetFilter">Reset Filters</button>
+        <button id="toggleLegend">Toggle Legend</button>
+        <button id="snapshot">Save Image</button>
+    </div>
+    <div id="cy"></div>
+    <div class="legend" id="legend"></div>
+    <div class="tooltip" id="tooltip"></div>
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Processing layout...</div>
+    </div>
+
+    <script>
+        // Graph data from Python
+        const graphData = {
+  "elements": [
+    {
+      "data": {
+        "id": "file:._auth_client.py",
+        "label": "./auth_client.py",
+        "short_label": "auth_client.py",
+        "type": "file",
+        "attr_path": "./auth_client.py"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "file:file:._auth_client.py:1",
+        "label": "AuthClient (auth_client.py)",
+        "short_label": "AuthClient",
+        "type": "file",
+        "attr_domain": "example-web-service",
+        "attr_name": "AuthClient",
+        "attr_description": "Authentication client for the user service"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "domain:example-web-service",
+        "label": "example-web-service",
+        "short_label": "example-web-service",
+        "type": "domain"
+      },
+      "classes": "domain"
+    },
+    {
+      "data": {
+        "id": "class:file:._auth_client.py:23",
+        "label": "AuthClient (auth_client.py)",
+        "short_label": "AuthClient",
+        "type": "class",
+        "attr_name": "AuthClient",
+        "attr_description": "Client for authentication operations"
+      },
+      "classes": "class"
+    },
+    {
+      "data": {
+        "id": "function:file:._auth_client.py:51",
+        "label": "hash_password (auth_client.py)",
+        "short_label": "hash_password",
+        "type": "function",
+        "attr_name": "hash_password",
+        "attr_description": "Hash a password securely"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._auth_client.py:77",
+        "label": "verify_password (auth_client.py)",
+        "short_label": "verify_password",
+        "type": "function",
+        "attr_name": "verify_password",
+        "attr_description": "Verify a password against a stored hash"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._auth_client.py:107",
+        "label": "check_token (auth_client.py)",
+        "short_label": "check_token",
+        "type": "function",
+        "attr_name": "check_token",
+        "attr_description": "Verify and decode a JWT token"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._auth_client.py:152",
+        "label": "authenticate_with_credentials (auth_client.py)",
+        "short_label": "authenticate_with_credentials",
+        "type": "function",
+        "attr_name": "authenticate_with_credentials",
+        "attr_description": "Authenticate user with credentials and get a token"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "file:._database.py",
+        "label": "./database.py",
+        "short_label": "database.py",
+        "type": "file",
+        "attr_path": "./database.py"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "file:file:._database.py:1",
+        "label": "UserDatabase (database.py)",
+        "short_label": "UserDatabase",
+        "type": "file",
+        "attr_domain": "example-web-service",
+        "attr_name": "UserDatabase",
+        "attr_description": "Database layer for the user service"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "class:file:._database.py:26",
+        "label": "Class in database.py (database.py)",
+        "short_label": "Class in database.py",
+        "type": "class",
+        "attr_description": "SQLAlchemy model for user data"
+      },
+      "classes": "class"
+    },
+    {
+      "data": {
+        "id": "class:file:._database.py:57",
+        "label": "User (database.py)",
+        "short_label": "User",
+        "type": "class",
+        "attr_name": "User",
+        "attr_description": "Data class for user information"
+      },
+      "classes": "class"
+    },
+    {
+      "data": {
+        "id": "function:file:._database.py:85",
+        "label": "UserDatabase (database.py)",
+        "short_label": "UserDatabase",
+        "type": "function",
+        "attr_name": "UserDatabase",
+        "attr_description": "Database access layer for user operations"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "file:.___init__.py",
+        "label": "./__init__.py",
+        "short_label": "__init__.py",
+        "type": "file",
+        "attr_path": "./__init__.py"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "file:file:.___init__.py:1",
+        "label": "web_service (__init__.py)",
+        "short_label": "web_service",
+        "type": "file",
+        "attr_domain": "example-web-service",
+        "attr_name": "web_service",
+        "attr_description": "Example web service demonstrating ADP metadata usage",
+        "attr_serviceBoundary_service": "UserService",
+        "attr_serviceBoundary_teamOwner": "Auth Team"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "service:UserService",
+        "label": "UserService",
+        "short_label": "UserService",
+        "type": "service",
+        "attr_service": "UserService",
+        "attr_teamOwner": "Auth Team"
+      },
+      "classes": "service"
+    },
+    {
+      "data": {
+        "id": "team:Auth Team",
+        "label": "Auth Team",
+        "short_label": "Auth Team",
+        "type": "team"
+      },
+      "classes": "team"
+    },
+    {
+      "data": {
+        "id": "file:._app.py",
+        "label": "./app.py",
+        "short_label": "app.py",
+        "type": "file",
+        "attr_path": "./app.py"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "file:file:._app.py:1",
+        "label": "UserService (app.py)",
+        "short_label": "UserService",
+        "type": "file",
+        "attr_domain": "example-web-service",
+        "attr_name": "UserService",
+        "attr_description": "A sample web service demonstrating ADP metadata usage",
+        "attr_serviceBoundary_service": "UserService",
+        "attr_serviceBoundary_teamOwner": "Auth Team"
+      },
+      "classes": "file"
+    },
+    {
+      "data": {
+        "id": "function:file:._app.py:35",
+        "label": "health_check (app.py)",
+        "short_label": "health_check",
+        "type": "function",
+        "attr_name": "health_check",
+        "attr_description": "Health check endpoint for the service"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._app.py:80",
+        "label": "get_users (app.py)",
+        "short_label": "get_users",
+        "type": "function",
+        "attr_name": "get_users",
+        "attr_description": "Retrieves a list of users with pagination"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._app.py:109",
+        "label": "get_user (app.py)",
+        "short_label": "get_user",
+        "type": "function",
+        "attr_name": "get_user",
+        "attr_description": "Retrieves a single user by ID"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._app.py:141",
+        "label": "create_user (app.py)",
+        "short_label": "create_user",
+        "type": "function",
+        "attr_name": "create_user",
+        "attr_description": "Creates a new user"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._app.py:176",
+        "label": "login (app.py)",
+        "short_label": "login",
+        "type": "function",
+        "attr_name": "login",
+        "attr_description": "Authenticates a user and provides a JWT token"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "function:file:._app.py:228",
+        "label": "generate_token (app.py)",
+        "short_label": "generate_token",
+        "type": "function",
+        "attr_name": "generate_token",
+        "attr_description": "Generates a JWT token for authenticated users"
+      },
+      "classes": "function"
+    },
+    {
+      "data": {
+        "id": "file:file:._auth_client.py:1-related_to-domain:example-web-service",
+        "source": "file:file:._auth_client.py:1",
+        "target": "domain:example-web-service",
+        "type": "related_to"
+      },
+      "classes": "related_to"
+    },
+    {
+      "data": {
+        "id": "file:._auth_client.py-contains-class:file:._auth_client.py:23",
+        "source": "file:._auth_client.py",
+        "target": "class:file:._auth_client.py:23",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._auth_client.py-contains-function:file:._auth_client.py:51",
+        "source": "file:._auth_client.py",
+        "target": "function:file:._auth_client.py:51",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._auth_client.py-contains-function:file:._auth_client.py:77",
+        "source": "file:._auth_client.py",
+        "target": "function:file:._auth_client.py:77",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._auth_client.py-contains-function:file:._auth_client.py:107",
+        "source": "file:._auth_client.py",
+        "target": "function:file:._auth_client.py:107",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._auth_client.py-contains-function:file:._auth_client.py:152",
+        "source": "file:._auth_client.py",
+        "target": "function:file:._auth_client.py:152",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:file:._database.py:1-related_to-domain:example-web-service",
+        "source": "file:file:._database.py:1",
+        "target": "domain:example-web-service",
+        "type": "related_to"
+      },
+      "classes": "related_to"
+    },
+    {
+      "data": {
+        "id": "file:._database.py-contains-class:file:._database.py:26",
+        "source": "file:._database.py",
+        "target": "class:file:._database.py:26",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._database.py-contains-class:file:._database.py:57",
+        "source": "file:._database.py",
+        "target": "class:file:._database.py:57",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._database.py-contains-function:file:._database.py:85",
+        "source": "file:._database.py",
+        "target": "function:file:._database.py:85",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:file:.___init__.py:1-related_to-domain:example-web-service",
+        "source": "file:file:.___init__.py:1",
+        "target": "domain:example-web-service",
+        "type": "related_to"
+      },
+      "classes": "related_to"
+    },
+    {
+      "data": {
+        "id": "file:file:.___init__.py:1-depends_on-service:UserService",
+        "source": "file:file:.___init__.py:1",
+        "target": "service:UserService",
+        "type": "depends_on"
+      },
+      "classes": "depends_on"
+    },
+    {
+      "data": {
+        "id": "service:UserService-owned_by-team:Auth Team",
+        "source": "service:UserService",
+        "target": "team:Auth Team",
+        "type": "owned_by"
+      },
+      "classes": "owned_by"
+    },
+    {
+      "data": {
+        "id": "file:file:._app.py:1-related_to-domain:example-web-service",
+        "source": "file:file:._app.py:1",
+        "target": "domain:example-web-service",
+        "type": "related_to"
+      },
+      "classes": "related_to"
+    },
+    {
+      "data": {
+        "id": "file:file:._app.py:1-depends_on-service:UserService",
+        "source": "file:file:._app.py:1",
+        "target": "service:UserService",
+        "type": "depends_on"
+      },
+      "classes": "depends_on"
+    },
+    {
+      "data": {
+        "id": "service:UserService-owned_by-team:Auth Team",
+        "source": "service:UserService",
+        "target": "team:Auth Team",
+        "type": "owned_by"
+      },
+      "classes": "owned_by"
+    },
+    {
+      "data": {
+        "id": "file:._app.py-contains-function:file:._app.py:35",
+        "source": "file:._app.py",
+        "target": "function:file:._app.py:35",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._app.py-contains-function:file:._app.py:80",
+        "source": "file:._app.py",
+        "target": "function:file:._app.py:80",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._app.py-contains-function:file:._app.py:109",
+        "source": "file:._app.py",
+        "target": "function:file:._app.py:109",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._app.py-contains-function:file:._app.py:141",
+        "source": "file:._app.py",
+        "target": "function:file:._app.py:141",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._app.py-contains-function:file:._app.py:176",
+        "source": "file:._app.py",
+        "target": "function:file:._app.py:176",
+        "type": "contains"
+      },
+      "classes": "contains"
+    },
+    {
+      "data": {
+        "id": "file:._app.py-contains-function:file:._app.py:228",
+        "source": "file:._app.py",
+        "target": "function:file:._app.py:228",
+        "type": "contains"
+      },
+      "classes": "contains"
+    }
+  ],
+  "type_colors": {
+    "service": "#3498db",
+    "module": "#e74c3c",
+    "class": "#2ecc71",
+    "function": "#9b59b6",
+    "method": "#8e44ad",
+    "variable": "#f1c40f",
+    "file": "#1abc9c",
+    "domain": "#34495e",
+    "concept": "#95a5a6",
+    "team": "#16a085",
+    "tech_debt": "#e67e22",
+    "performance": "#d35400",
+    "data": "#3498db"
+  },
+  "edge_colors": {
+    "contains": "#3498db",
+    "uses": "#2ecc71",
+    "depends_on": "#e74c3c",
+    "calls": "#9b59b6",
+    "implements": "#f39c12",
+    "extends": "#d35400",
+    "references": "#7f8c8d",
+    "owned_by": "#2c3e50",
+    "related_to": "#95a5a6",
+    "has_tech_debt": "#e67e22",
+    "has_performance_issue": "#d35400",
+    "processes_data": "#3498db"
+  },
+  "custom_node_types": [],
+  "custom_edge_types": []
+};
+        
+        // Initialize Cytoscape
+        const cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: graphData.elements,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(short_label)',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'font-size': '12px',
+                        'color': '#fff',
+                        'text-outline-width': 1,
+                        'text-outline-color': '#555',
+                        'background-color': '#888',
+                        'border-width': 1,
+                        'border-color': '#555',
+                        'text-wrap': 'wrap',
+                        'text-max-width': '80px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'curve-style': 'bezier',
+                        'target-arrow-shape': 'triangle',
+                        'arrow-scale': 0.8,
+                        'line-color': '#ccc',
+                        'target-arrow-color': '#ccc',
+                        'opacity': 0.7,
+                        'label': 'data(type)',
+                        'font-size': '10px',
+                        'text-rotation': 'autorotate',
+                        'text-margin-y': '-10px',
+                        'text-outline-width': 2,
+                        'text-outline-color': '#fff',
+                        'color': '#555'
+                    }
+                },
+            ],
+            layout: {
+                name: 'dagre',
+                padding: 30,
+                nodeSep: 80,
+                rankSep: 100,
+                rankDir: 'TB',
+                animate: true,
+                animationDuration: 500,
+                fit: true
+            }
+        });
+        
+        // Set node colors based on type
+        Object.entries(graphData.type_colors).forEach(([type, color]) => {
+            cy.style().selector(`node.$<class 'type'>`).style({'background-color': color}).update();
+        });
+        
+        // Set edge colors based on type
+        Object.entries(graphData.edge_colors).forEach(([type, color]) => {
+            cy.style().selector(`edge.$<class 'type'>`).style({
+                'line-color': color, 
+                'target-arrow-color': color
+            }).update();
+        });
+        
+        // Add style for highlighted elements
+        cy.style()
+            .selector('node.highlight')
+            .style({
+                'border-width': 3,
+                'border-color': '#ff0',
+                'border-style': 'double'
+            })
+            .selector('node.semitransparent')
+            .style({
+                'opacity': 0.3
+            })
+            .selector('edge.highlight')
+            .style({
+                'width': 4,
+                'line-color': '#ff0',
+                'target-arrow-color': '#ff0',
+                'opacity': 1
+            })
+            .selector('edge.semitransparent')
+            .style({
+                'opacity': 0.1
+            })
+            .selector('node:selected')
+            .style({
+                'border-width': 3,
+                'border-color': '#ff0',
+                'border-style': 'double'
+            })
+            .selector('edge:selected')
+            .style({
+                'width': 4,
+                'line-color': '#ff0',
+                'target-arrow-color': '#ff0'
+            })
+            .update();
+        
+        // Add node types to filter dropdown
+        const nodeTypes = [...new Set(graphData.elements
+            .filter(el => el.data.type)
+            .map(el => el.data.type))];
+            
+        const filterSelect = document.getElementById('filterByType');
+        nodeTypes.sort().forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+            filterSelect.appendChild(option);
+        });
+        
+        // Create legend
+        function createLegend() {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '<h3>Node Types</h3>';
+            
+            // Add entries for known node types and any custom ones
+            const allNodeTypes = nodeTypes;
+            
+            allNodeTypes.sort().forEach(type => {
+                const color = graphData.type_colors[type] || '#888';
+                
+                if (cy.nodes('.' + type).length > 0) {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    
+                    const colorBox = document.createElement('div');
+                    colorBox.className = 'legend-color';
+                    colorBox.style.backgroundColor = color;
+                    
+                    const label = document.createElement('span');
+                    label.textContent = type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+                    
+                    item.appendChild(colorBox);
+                    item.appendChild(label);
+                    legend.appendChild(item);
+                }
+            });
+            
+            legend.innerHTML += '<h3>Edge Types</h3>';
+            const edgeTypes = [...new Set(cy.edges().map(e => e.data('type')))];
+            
+            edgeTypes.sort().forEach(type => {
+                const color = graphData.edge_colors[type] || '#ccc';
+                
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.backgroundColor = color;
+                
+                const label = document.createElement('span');
+                label.textContent = type.replace(/_/g, ' ');
+                
+                item.appendChild(colorBox);
+                item.appendChild(label);
+                legend.appendChild(item);
+            });
+        }
+        
+        createLegend();
+        
+        // Helper function to format attribute keys for display
+        function formatAttributeKey(key) {
+            // Remove attr_ prefix and replace underscores with spaces
+            return key.replace(/^attr_/, '')
+                     .replace(/_/g, ' ')
+                     // Capitalize first letter of each word
+                     .replace(/(\w)/g, match => match.toUpperCase());
+        }
+        
+        // Group metadata attributes by category
+        function groupMetadataAttributes(data) {
+            const groups = {
+                // Core properties that should appear at the top
+                core: [],
+                // Known categories
+                domain: [],
+                service: [],
+                dependencies: [],
+                tech_debt: [],
+                performance: [],
+                data: [],
+                // Everything else goes here
+                other: []
+            };
+            
+            // Get all attribute keys (those starting with attr_)
+            const attributes = Object.entries(data).filter(([key]) => key.startsWith('attr_'));
+            
+            attributes.forEach(([key, value]) => {
+                const cleanKey = key.replace(/^attr_/, '');
+                
+                // Check which group this attribute belongs to
+                if (cleanKey === 'domain' || cleanKey === 'description') {
+                    groups.core.push([key, value]);
+                } else if (cleanKey.startsWith('tech_debt') || 
+                           cleanKey.startsWith('techDebt') || 
+                           cleanKey.startsWith('tech-debt')) {
+                    groups.tech_debt.push([key, value]);
+                } else if (cleanKey.startsWith('performance')) {
+                    groups.performance.push([key, value]);
+                } else if (cleanKey.startsWith('data') || 
+                           cleanKey.startsWith('dataHandling') || 
+                           cleanKey.startsWith('data-handling')) {
+                    groups.data.push([key, value]);
+                } else if (cleanKey.startsWith('service') || 
+                           cleanKey.startsWith('serviceBoundary') ||
+                           cleanKey.startsWith('service-boundary')) {
+                    groups.service.push([key, value]);
+                } else if (cleanKey === 'dependencies' || 
+                           cleanKey.startsWith('depends_on') || 
+                           cleanKey.startsWith('imports') ||
+                           cleanKey.startsWith('requires')) {
+                    groups.dependencies.push([key, value]);
+                } else {
+                    groups.other.push([key, value]);
+                }
+            });
+            
+            return groups;
+        }
+        
+        // Tooltip for node metadata
+        function showNodeTooltip(node, event) {
+            const tooltip = document.getElementById('tooltip');
+            const data = node.data();
+            
+            let content = `<h3>${data.label}</h3>`;
+            content += `<p><span class="tooltip-label">Type:</span> <span class="badge">${data.type}</span></p>`;
+            
+            // Group and organize the metadata
+            const groups = groupMetadataAttributes(data);
+            
+            // Add core properties first
+            if (groups.core.length > 0) {
+                groups.core.forEach(([key, value]) => {
+                    const attrName = formatAttributeKey(key);
+                    const valueDisplay = typeof value === 'string' && value.length > 100 ? 
+                                      value.substring(0, 100) + '...' : value;
+                    content += `<p><span class="tooltip-label">${attrName}:</span> <span class="tooltip-value">${valueDisplay}</span></p>`;
+                });
+            }
+            
+            // Add each metadata group
+            const groupLabels = {
+                domain: 'Domain',
+                service: 'Service',
+                dependencies: 'Dependencies',
+                tech_debt: 'Technical Debt',
+                performance: 'Performance',
+                data: 'Data Handling',
+                other: 'Other Metadata'
+            };
+            
+            Object.entries(groups).forEach(([groupName, attributes]) => {
+                // Skip the core group (already processed) and empty groups
+                if (groupName === 'core' || attributes.length === 0) return;
+                
+                content += `<h4>${groupLabels[groupName]}</h4>`;
+                content += '<div class="metadata-section">';
+                
+                attributes.forEach(([key, value]) => {
+                    const attrName = formatAttributeKey(key);
+                    const valueDisplay = typeof value === 'string' && value.length > 100 ? 
+                                      value.substring(0, 100) + '...' : value;
+                    content += `<p><span class="tooltip-label">${attrName}:</span> <span class="tooltip-value">${valueDisplay}</span></p>`;
+                });
+                
+                content += '</div>';
+            });
+            
+            tooltip.innerHTML = content;
+            tooltip.style.left = `${event.renderedPosition.x + 10}px`;
+            tooltip.style.top = `${event.renderedPosition.y + 10}px`;
+            tooltip.style.display = 'block';
+            
+            // Adjust tooltip position if it goes off screen
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            if (tooltipRect.right > viewportWidth) {
+                tooltip.style.left = `${event.renderedPosition.x - tooltipRect.width - 10}px`;
+            }
+            
+            if (tooltipRect.bottom > viewportHeight) {
+                tooltip.style.top = `${event.renderedPosition.y - tooltipRect.height - 10}px`;
+            }
+        }
+        
+        function showEdgeTooltip(edge, event) {
+            const tooltip = document.getElementById('tooltip');
+            const data = edge.data();
+            
+            let content = `<h3>Relationship: ${data.type.replace(/_/g, ' ')}</h3>`;
+            content += `<p><span class="tooltip-label">From:</span> <span class="tooltip-value">${edge.source().data('short_label')}</span></p>`;
+            content += `<p><span class="tooltip-label">To:</span> <span class="tooltip-value">${edge.target().data('short_label')}</span></p>`;
+            
+            // Add additional metadata if present
+            const attributes = Object.entries(data).filter(([key]) => key.startsWith('attr_'));
+            if (attributes.length > 0) {
+                content += '<h4>Metadata</h4>';
+                content += '<div class="metadata-section">';
+                attributes.forEach(([key, value]) => {
+                    const attrName = formatAttributeKey(key);
+                    content += `<p><span class="tooltip-label">${attrName}:</span> <span class="tooltip-value">${value}</span></p>`;
+                });
+                content += '</div>';
+            }
+            
+            tooltip.innerHTML = content;
+            tooltip.className = 'tooltip edge-tooltip';
+            tooltip.style.left = `${event.renderedPosition.x + 10}px`;
+            tooltip.style.top = `${event.renderedPosition.y + 10}px`;
+            tooltip.style.display = 'block';
+            
+            // Adjust tooltip position if it goes off screen
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            if (tooltipRect.right > viewportWidth) {
+                tooltip.style.left = `${event.renderedPosition.x - tooltipRect.width - 10}px`;
+            }
+            
+            if (tooltipRect.bottom > viewportHeight) {
+                tooltip.style.top = `${event.renderedPosition.y - tooltipRect.height - 10}px`;
+            }
+        }
+        
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'none';
+            tooltip.className = 'tooltip'; // Reset tooltip class
+        }
+        
+        // Highlight connected elements
+        function highlightConnectedElements(node) {
+            // Reset all elements
+            cy.elements().removeClass('highlight semitransparent');
+            
+            // If no node is selected, clear highlight
+            if (!node) return;
+            
+            // Get connected edges and nodes
+            const connectedEdges = node.connectedEdges();
+            const connectedNodes = connectedEdges.connectedNodes();
+            
+            // Add the original node to the connected nodes
+            const allConnected = connectedNodes.union(node);
+            
+            // Highlight connected elements
+            allConnected.addClass('highlight');
+            connectedEdges.addClass('highlight');
+            
+            // Make all other elements semi-transparent
+            cy.elements().not(allConnected.union(connectedEdges)).addClass('semitransparent');
+        }
+        
+        // Event listeners
+        cy.on('mouseover', 'node', function(evt) {
+            showNodeTooltip(evt.target, evt);
+        });
+        
+        cy.on('mouseover', 'edge', function(evt) {
+            showEdgeTooltip(evt.target, evt);
+        });
+        
+        cy.on('mouseout', function() {
+            hideTooltip();
+        });
+        
+        cy.on('tap', 'node', function(evt) {
+            highlightConnectedElements(evt.target);
+        });
+        
+        cy.on('tap', function(evt) {
+            if (evt.target === cy) {
+                // Clicked on background, clear highlights
+                cy.elements().removeClass('highlight semitransparent');
+                hideTooltip();
+            }
+        });
+        
+        // Layout buttons
+        document.getElementById('fit').addEventListener('click', function() {
+            cy.fit();
+        });
+        
+        document.getElementById('hierarchical').addEventListener('click', function() {
+            document.getElementById('loading').style.display = 'block';
+            setTimeout(() => {
+                cy.layout({
+                    name: 'dagre',
+                    rankDir: 'TB',
+                    nodeSep: 80,
+                    rankSep: 100,
+                    padding: 30,
+                    animate: true,
+                    animationDuration: 800
+                }).run();
+                
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 900);
+            }, 50);
+        });
+        
+        document.getElementById('concentric').addEventListener('click', function() {
+            document.getElementById('loading').style.display = 'block';
+            setTimeout(() => {
+                cy.layout({
+                    name: 'concentric',
+                    concentric: function(node) {
+                        // More important nodes in the center
+                        const typeRank = {
+                            'domain': 10,
+                            'service': 9,
+                            'team': 8,
+                            'file': 7,
+                            'class': 6,
+                            'function': 5,
+                            'method': 4,
+                            'variable': 3,
+                            'tech_debt': 2,
+                            'performance': 2,
+                            'data': 1
+                        };
+                        return typeRank[node.data('type')] || 0;
+                    },
+                    levelWidth: function() { return 1; },
+                    animate: true,
+                    animationDuration: 800
+                }).run();
+                
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 900);
+            }, 50);
+        });
+        
+        document.getElementById('force').addEventListener('click', function() {
+            document.getElementById('loading').style.display = 'block';
+            setTimeout(() => {
+                cy.layout({
+                    name: 'cose',
+                    idealEdgeLength: 150,
+                    nodeOverlap: 20,
+                    refresh: 20,
+                    fit: true,
+                    padding: 30,
+                    randomize: false,
+                    componentSpacing: 100,
+                    nodeRepulsion: 400000,
+                    edgeElasticity: 100,
+                    nestingFactor: 5,
+                    gravity: 80,
+                    numIter: 1000,
+                    animate: 'end',
+                    animationDuration: 800
+                }).run();
+                
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 1000);
+            }, 50);
+        });
+        
+        // Filter by node type
+        document.getElementById('filterByType').addEventListener('change', function() {
+            const selectedType = this.value;
+            
+            if (selectedType === 'all') {
+                cy.elements().removeClass('semitransparent');
+                return;
+            }
+            
+            // Filter nodes by selected type
+            const selectedNodes = cy.nodes('.' + selectedType);
+            const connectedEdges = selectedNodes.connectedEdges();
+            
+            // Make non-matching elements semi-transparent
+            cy.elements().addClass('semitransparent');
+            selectedNodes.removeClass('semitransparent');
+            connectedEdges.removeClass('semitransparent');
+        });
+        
+        document.getElementById('resetFilter').addEventListener('click', function() {
+            cy.elements().removeClass('highlight semitransparent');
+            document.getElementById('filterByType').value = 'all';
+        });
+        
+        // Toggle legend
+        document.getElementById('toggleLegend').addEventListener('click', function() {
+            const legend = document.getElementById('legend');
+            legend.style.display = legend.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        // Search functionality
+        document.getElementById('searchBtn').addEventListener('click', function() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            if (!searchTerm) return;
+            
+            // Reset highlighting
+            cy.elements().removeClass('highlight semitransparent');
+            
+            // Build search index from all node data
+            const searchableNodes = cy.nodes().filter(node => {
+                const data = node.data();
+                
+                // Check label and short_label
+                if (data.label.toLowerCase().includes(searchTerm) || 
+                    (data.short_label && data.short_label.toLowerCase().includes(searchTerm))) {
+                    return true;
+                }
+                
+                // Search in all attributes
+                for (const [key, value] of Object.entries(data)) {
+                    if (key.startsWith('attr_') && 
+                        typeof value === 'string' && 
+                        value.toLowerCase().includes(searchTerm)) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            });
+            
+            if (searchableNodes.length > 0) {
+                // Highlight matching nodes
+                searchableNodes.addClass('highlight');
+                
+                // Make non-matching elements semi-transparent
+                cy.elements().not(searchableNodes).addClass('semitransparent');
+                
+                // Center the view on the first match
+                cy.animate({
+                    fit: {
+                        eles: searchableNodes,
+                        padding: 50
+                    },
+                    duration: 500
+                });
+            }
+        });
+        
+        // Also trigger search on Enter key
+        document.getElementById('search').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                document.getElementById('searchBtn').click();
+            }
+        });
+        
+        // Save snapshot
+        document.getElementById('snapshot').addEventListener('click', function() {
+            // Create a PNG snapshot of the current view
+            const png = cy.png({
+                output: 'blob',
+                bg: 'white',
+                full: false,
+                scale: 2,
+                quality: 1
+            });
+            
+            // Save the image
+            saveAs(png, 'knowledge_graph.png');
+        });
+        
+        // Fit the graph to the viewport initially
+        cy.ready(() => {
+            cy.fit();
+        });
+    </script>
+</body>
+</html>
+        

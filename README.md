@@ -32,7 +32,7 @@ pip install adp-py
 ### From Source
 
 ```bash
-git clone https://github.com/username/adp.git
+git clone https://github.com/mkpvishnu/adpp.git
 cd adp
 pip install -e .
 ```

@@ -1,6 +1,11 @@
 # ADP Protocol Technical Documentation
 
 This technical documentation provides detailed guidance on using ADP (AI-Driven Programming) in various scenarios, covering implementation details, best practices, and advanced use cases.
+Explore our system's component relationships through an interactive visualization:
+
+
+**[➡️ Open Interactive Knowledge Graph](https://mkpvishnu.github.io/adpp/adp_py/examples/web_service/adp_knowledge_graph.html)**
+
 
 ## Table of Contents
 

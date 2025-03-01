@@ -1,4 +1,4 @@
-# ADP Technical Documentation
+# ADP Protocol Technical Documentation
 
 This technical documentation provides detailed guidance on using ADP (AI-Driven Programming) in various scenarios, covering implementation details, best practices, and advanced use cases.
 
@@ -32,8 +32,8 @@ pip install adp-py
 ### From Source
 
 ```bash
-git clone https://github.com/username/adp.git
-cd adp
+git clone https://github.com/mkpvishnu/adpp.git
+cd adpp
 pip install -e .
 ```
 
@@ -354,7 +354,7 @@ pipeline {
 }
 ```
 
-### Documentation Generation
+### Documentation Generation (Yet to be implemented)
 
 Generate static documentation from metadata:
 

@@ -1,4 +1,4 @@
-# ADP Technical Documentation
+# ADP Protocol Technical Documentation
 
 This technical documentation provides detailed guidance on using ADP (AI-Driven Programming) in various scenarios, covering implementation details, best practices, and advanced use cases.
 
@@ -354,7 +354,7 @@ pipeline {
 }
 ```
 
-### Documentation Generation
+### Documentation Generation (Yet to be implemented)
 
 Generate static documentation from metadata:
 
